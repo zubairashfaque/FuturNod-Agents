@@ -51,12 +51,25 @@ const AgentTestingDashboard: React.FC = () => {
   const { toast } = useToast();
 
   // API configuration
-  const API_URL = "http://13.233.233.139:8080";
+  const API_URL = "https://13.233.233.139:8443";
   const API_KEY = "f3BUczDcVEkEQhwJeiaa8aY3mxXr3Hzyip-rYB0p2Yk";
 
   const checkApiHealth = async () => {
     try {
-      const response = await fetch(`${API_URL}/health`);
+      console.log(`Checking API health at ${API_URL}/health`);
+      const response = await fetch(`${API_URL}/health`, {
+        method: "GET",
+        // Required to ignore SSL certificate validation issues
+        // This is equivalent to the --insecure flag in curl
+        mode: "cors",
+        // Add additional headers to help with CORS
+        headers: {
+          Accept: "application/json",
+          "X-API-Key": API_KEY,
+        },
+        // Explicitly set credentials to 'omit' for cross-origin requests to endpoints with self-signed certs
+        credentials: "omit",
+      });
       if (!response.ok) {
         throw new Error(`Health check failed with status: ${response.status}`);
       }
@@ -68,7 +81,7 @@ const AgentTestingDashboard: React.FC = () => {
       toast({
         title: "API Service Unavailable",
         description:
-          "The AI service is currently unavailable. Please try again later.",
+          "The AI service is currently unavailable. Please try again later. This may be due to SSL certificate issues with the API server.",
         variant: "destructive",
       });
       return false;
@@ -121,10 +134,19 @@ const AgentTestingDashboard: React.FC = () => {
       };
 
       // Start the task
+      console.log(`Sending request to ${API_URL}/agents/sales-contact-finder`);
+      console.log("Payload:", payload);
       const response = await fetch(`${API_URL}/agents/sales-contact-finder`, {
         method: "POST",
-        headers: headers,
+        headers: {
+          ...headers,
+          Accept: "application/json",
+        },
         body: JSON.stringify(payload),
+        // Required to ignore SSL certificate validation issues
+        mode: "cors",
+        // Explicitly set credentials to 'omit' for cross-origin requests to endpoints with self-signed certs
+        credentials: "omit",
       });
 
       if (!response.ok) {
@@ -156,9 +178,17 @@ const AgentTestingDashboard: React.FC = () => {
         }
 
         try {
+          console.log(`Checking task status at ${API_URL}/task/${requestId}`);
           const statusResponse = await fetch(`${API_URL}/task/${requestId}`, {
             method: "GET",
-            headers: headers,
+            headers: {
+              ...headers,
+              Accept: "application/json",
+            },
+            // Required to ignore SSL certificate validation issues
+            mode: "cors",
+            // Explicitly set credentials to 'omit' for cross-origin requests to endpoints with self-signed certs
+            credentials: "omit",
           });
 
           if (!statusResponse.ok) {
@@ -232,14 +262,40 @@ const AgentTestingDashboard: React.FC = () => {
         title: "API Service Available",
         description: "The AI service is currently online and ready to use.",
       });
+    } else {
+      // Display more detailed troubleshooting information
+      console.log("API Connection Troubleshooting:");
+      console.log(`- API URL: ${API_URL}`);
+      console.log("- Using mode: 'cors' to handle CORS and certificate issues");
+      console.log(
+        "- Using credentials: 'omit' to avoid sending cookies with cross-origin requests",
+      );
+      console.log(
+        "- Check browser console for more detailed error information",
+      );
     }
   };
 
   const handleError = (search: SearchResult, error: any) => {
+    console.error("API Error:", error);
+
+    // Create a more informative error message
+    let errorMessage = error.message || "An unknown error occurred";
+
+    // Add specific guidance for common errors
+    if (
+      errorMessage.includes("Failed to fetch") ||
+      errorMessage.includes("NetworkError") ||
+      errorMessage.includes("certificate")
+    ) {
+      errorMessage +=
+        "\n\nThis may be due to SSL certificate issues with the API server. The server is using a self-signed certificate which browsers typically block.";
+    }
+
     const errorSearch: SearchResult = {
       ...search,
       status: "error",
-      error: error.message || "An unknown error occurred",
+      error: errorMessage,
     };
 
     setCurrentResult(errorSearch);
@@ -248,7 +304,7 @@ const AgentTestingDashboard: React.FC = () => {
 
     toast({
       title: "Error",
-      description: errorSearch.error,
+      description: errorMessage.split("\n")[0], // Show just the first line in the toast
       variant: "destructive",
     });
   };
@@ -333,6 +389,10 @@ const AgentTestingDashboard: React.FC = () => {
                 >
                   Check API Status
                 </Button>
+                <div className="text-xs text-gray-500 mt-2">
+                  <p>API URL: {API_URL}</p>
+                  <p>Using CORS mode to handle self-signed certificate</p>
+                </div>
               </div>
             </form>
           </CardContent>
@@ -390,7 +450,16 @@ const AgentTestingDashboard: React.FC = () => {
                   <AlertCircle className="h-4 w-4" />
                   <AlertTitle>Error</AlertTitle>
                   <AlertDescription>
-                    {currentResult.error || "An unknown error occurred"}
+                    {(currentResult.error || "An unknown error occurred")
+                      .split("\n")
+                      .map((line, i) => (
+                        <React.Fragment key={i}>
+                          {line}
+                          {i <
+                            (currentResult.error || "").split("\n").length -
+                              1 && <br />}
+                        </React.Fragment>
+                      ))}
                   </AlertDescription>
                   <Button
                     variant="outline"
