@@ -19,8 +19,8 @@ import PDFPitchInfo from "./PDFPitchInfo";
 import { useSalesContactFinder } from "@/api/hooks/useSalesContactFinder";
 import { Link } from "react-router-dom";
 import ErrorBoundary from "@/components/ui/ErrorBoundary";
-import remarkGfm from "remark-gfm";
-import ReactMarkdown from "react-markdown";
+import remarkGfm from 'remark-gfm';
+import ReactMarkdown from 'react-markdown';
 
 const PDFPitchDashboard = () => {
   // Form state for company info
