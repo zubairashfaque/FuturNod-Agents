@@ -19,8 +19,7 @@ import PDFPitchInfo from "./PDFPitchInfo";
 import { useSalesContactFinder } from "@/api/hooks/useSalesContactFinder";
 import { Link } from "react-router-dom";
 import ErrorBoundary from "@/components/ui/ErrorBoundary";
-// Import just ReactMarkdown, no plugins
-import ReactMarkdown from 'react-markdown';
+// Remove ReactMarkdown and remarkGfm imports completely
 
 const PDFPitchDashboard = () => {
   // Form state for company info
@@ -107,10 +106,10 @@ const PDFPitchDashboard = () => {
     }
   };
 
-  // Function to get markdown content
-  const getMarkdownContent = () => {
-    return currentResult.result?.file_output || 
-           currentResult.result?.raw_markdown || 
+  // Get the content as plain text
+  const getContent = () => {
+    return currentResult?.result?.file_output || 
+           currentResult?.result?.raw_markdown || 
            "No content available";
   };
 
@@ -303,13 +302,11 @@ const PDFPitchDashboard = () => {
                   </div>
                   <div className="mt-4">
                     <ErrorBoundary>
+                      {/* Replace ReactMarkdown completely with a pre tag for displaying the content */}
                       <div className="bg-white p-4 rounded-md border border-gray-200 overflow-auto">
-                        {/* The absolute most minimal implementation possible */}
-                        <ReactMarkdown>
-                          {currentResult.result?.file_output ||
-                            currentResult.result?.raw_markdown ||
-                            "No content available"}
-                        </ReactMarkdown>
+                        <pre style={{ whiteSpace: 'pre-wrap', fontFamily: 'inherit' }}>
+                          {getContent()}
+                        </pre>
                       </div>
                     </ErrorBoundary>
                   </div>
