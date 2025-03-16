@@ -11,6 +11,7 @@ import {
   HelpCircle,
   FolderKanban,
   Search,
+  BarChart2,
 } from "lucide-react";
 
 interface NavItem {
@@ -32,7 +33,31 @@ const defaultNavItems: NavItem[] = [
   { icon: <FolderKanban size={20} />, label: "Projects" },
   { icon: <Calendar size={20} />, label: "Calendar" },
   { icon: <Users size={20} />, label: "Team" },
-  { icon: <Search size={20} />, label: "AI Agent Testing" },
+  {
+    icon: <Search size={20} />,
+    label: "AI Agent Playground",
+    href: "/agent-playground",
+  },
+  {
+    icon: <Search size={20} />,
+    label: "AI Agent Testing",
+    href: "/agent-testing",
+  },
+  {
+    icon: <BarChart2 size={20} />,
+    label: "Lead Genie Score",
+    href: "/lead-genie-score",
+  },
+  {
+    icon: <BarChart2 size={20} />,
+    label: "MarketMatch",
+    href: "/market-match",
+  },
+  {
+    icon: <Search size={20} />,
+    label: "ContractVista",
+    href: "/contract-vista",
+  },
 ];
 
 const defaultBottomItems: NavItem[] = [

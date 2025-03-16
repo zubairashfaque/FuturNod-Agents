@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import {
   Card,
   CardContent,
@@ -28,16 +28,15 @@ import {
   ArrowLeft,
   Download,
 } from "lucide-react";
-import { motion } from "framer-motion";
 import {
   useSalesContactFinder,
   SearchResult,
 } from "@/api/hooks/useSalesContactFinder";
-import LeadGenieInfo from "../agent-playground/LeadGenieInfo";
+import MarketMatchInfo from "./MarketMatchInfo";
 import { Link } from "react-router-dom";
 import MarkdownDisplay from "@/components/ui/markdown-display";
 
-const AgentTestingDashboard: React.FC = () => {
+const MarketMatchDashboard: React.FC = () => {
   const [company, setCompany] = useState("");
   const [product, setProduct] = useState("");
   const [isResultExpanded, setIsResultExpanded] = useState(true);
@@ -65,12 +64,7 @@ const AgentTestingDashboard: React.FC = () => {
   };
 
   const formatJson = (json: any) => {
-    try {
-      return JSON.stringify(json, null, 2);
-    } catch (error) {
-      console.error("Error formatting JSON:", error);
-      return "Error formatting JSON data";
-    }
+    return JSON.stringify(json, null, 2);
   };
 
   const generateMarkdown = (result: any) => {
@@ -86,64 +80,47 @@ const AgentTestingDashboard: React.FC = () => {
         return cleanMarkdown;
       }
 
-      // If the result is a string (like from ContractVista), return it directly
-      if (typeof result === "string") {
-        return result;
-      }
-
-      // If the result has file_output (like from ContractVista), use that
+      // If the result has file_output, use that
       if (result.file_output && typeof result.file_output === "string") {
         return result.file_output;
       }
 
       // Otherwise generate markdown from structured data with proper markdown formatting
-      let markdown = `# Results for ${currentResult?.company}\n\n`;
+      let markdown = `# Market Match Results for ${currentResult?.company}\n\n`;
       markdown += `*Generated on: ${new Date(currentResult?.timestamp || "").toLocaleString()}*\n\n`;
 
-      // Handle different agent types based on URL path
-      if (window.location.pathname.includes("contract-vista")) {
-        markdown += `## Contract Analysis\n\n`;
-        if (result.analysis) {
-          markdown += result.analysis;
-        } else {
-          markdown += JSON.stringify(result, null, 2);
-        }
-        return markdown;
+      markdown += `## Company Analysis\n\n`;
+      if (result.company_analysis) {
+        markdown += `**Strengths:** ${result.company_analysis.strengths || "N/A"}\n\n`;
+        markdown += `**Weaknesses:** ${result.company_analysis.weaknesses || "N/A"}\n\n`;
+        markdown += `**Opportunities:** ${result.company_analysis.opportunities || "N/A"}\n\n`;
+        markdown += `**Threats:** ${result.company_analysis.threats || "N/A"}\n\n`;
+      } else {
+        markdown += `*No company analysis available.*\n\n`;
       }
 
-      // Default format for sales contact finder
-      markdown += `## Recommended Contacts\n\n`;
-      if (result.contacts && Array.isArray(result.contacts)) {
-        result.contacts.forEach((contact: any, index: number) => {
-          markdown += `### Contact ${index + 1}: ${contact.name || "Unknown"}\n\n`;
-          markdown += `**Title:** ${contact.title || "N/A"}\n\n`;
-          markdown += `**Email:** ${contact.email || "N/A"}\n\n`;
-          markdown += `**Confidence:** ${contact.confidence ? Math.round(contact.confidence * 100) : "N/A"}%\n\n`;
+      markdown += `## Similar Companies\n\n`;
+      if (result.similar_companies && Array.isArray(result.similar_companies)) {
+        result.similar_companies.forEach((company: any, index: number) => {
+          markdown += `### Company ${index + 1}: ${company.name || "Unknown"}\n\n`;
+          markdown += `**Industry:** ${company.industry || "N/A"}\n\n`;
+          markdown += `**Similarity Score:** ${company.similarity_score ? Math.round(company.similarity_score * 100) : "N/A"}%\n\n`;
+          markdown += `**Key Attributes:** ${company.key_attributes || "N/A"}\n\n`;
         });
       } else {
-        markdown += `*No contact information available.*\n\n`;
+        markdown += `*No similar companies available.*\n\n`;
       }
 
-      markdown += `## Company Information\n\n`;
-      if (result.company_info) {
-        markdown += `**Name:** ${result.company_info.name || "N/A"}\n\n`;
-        markdown += `**Industry:** ${result.company_info.industry || "N/A"}\n\n`;
-        markdown += `**Size:** ${result.company_info.size || "N/A"}\n\n`;
-        markdown += `**Location:** ${result.company_info.location || "N/A"}\n\n`;
+      markdown += `## Outreach Strategy\n\n`;
+      if (result.outreach_strategy) {
+        markdown += `**Approach:** ${result.outreach_strategy.approach || "N/A"}\n\n`;
+        markdown += `**Key Messaging:** ${result.outreach_strategy.key_messaging || "N/A"}\n\n`;
+        markdown += `**Value Proposition:** ${result.outreach_strategy.value_proposition || "N/A"}\n\n`;
       } else {
-        markdown += `*No company information available.*\n\n`;
+        markdown += `*No outreach strategy available.*\n\n`;
       }
 
-      markdown += `## Product Match Analysis\n\n`;
-      if (result.product_match) {
-        markdown += `**Relevance:** ${result.product_match.relevance ? Math.round(result.product_match.relevance * 100) + "%" : "N/A"}\n\n`;
-        markdown += `**Target Department:** ${result.product_match.department || "N/A"}\n\n`;
-        markdown += `**Potential Use Case:** ${result.product_match.potential_use_case || "N/A"}\n\n`;
-      } else {
-        markdown += `*No product match analysis available.*\n\n`;
-      }
-
-      return markdown;
+      return markdown || "No content available";
     } catch (error) {
       console.error("Error generating markdown:", error);
       return "Error generating markdown from result data. See raw JSON for details.";
@@ -158,7 +135,7 @@ const AgentTestingDashboard: React.FC = () => {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `sales-contacts-${currentResult.company.replace(/\s+/g, "-").toLowerCase()}-${new Date().toISOString().split("T")[0]}.md`;
+    a.download = `market-match-${currentResult.company.replace(/\s+/g, "-").toLowerCase()}-${new Date().toISOString().split("T")[0]}.md`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -175,22 +152,22 @@ const AgentTestingDashboard: React.FC = () => {
           >
             <ArrowLeft className="h-5 w-5" />
           </Link>
-          <h1 className="text-3xl font-bold">LeadGenie - AI Agent Testing</h1>
+          <h1 className="text-3xl font-bold">MarketMatch - AI Agent Testing</h1>
         </div>
         <div className="flex justify-between items-center">
           <p className="text-gray-500">
-            Test the sales contact finder AI agent by inputting parameters and
-            viewing results.
+            Test the market match AI agent by inputting parameters and viewing
+            results.
           </p>
           <Button variant="outline" onClick={() => setShowInfo(!showInfo)}>
-            {showInfo ? "Hide Info" : "About LeadGenie"}
+            {showInfo ? "Hide Info" : "About MarketMatch"}
           </Button>
         </div>
       </div>
 
       {showInfo && (
         <div className="mb-8">
-          <LeadGenieInfo />
+          <MarketMatchInfo />
         </div>
       )}
 
@@ -200,7 +177,7 @@ const AgentTestingDashboard: React.FC = () => {
           <CardHeader>
             <CardTitle>Search Parameters</CardTitle>
             <CardDescription>
-              Enter details to find sales contacts
+              Enter details to find market matches
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -211,7 +188,7 @@ const AgentTestingDashboard: React.FC = () => {
                 </label>
                 <Input
                   id="company"
-                  placeholder="e.g. Acme Corporation"
+                  placeholder="e.g. Adobe Inc"
                   value={company}
                   onChange={(e) => setCompany(e.target.value)}
                   disabled={isLoading}
@@ -242,7 +219,7 @@ const AgentTestingDashboard: React.FC = () => {
                   ) : (
                     <>
                       <Search className="mr-2 h-4 w-4" />
-                      Find Contacts
+                      Find Matches
                     </>
                   )}
                 </Button>
@@ -255,10 +232,6 @@ const AgentTestingDashboard: React.FC = () => {
                 >
                   Check API Status
                 </Button>
-                <div className="text-xs text-gray-500 mt-2">
-                  <p>API URL: https://13.233.233.139:8000</p>
-                  <p>Using proxy to handle self-signed certificate</p>
-                </div>
               </div>
             </form>
           </CardContent>
@@ -290,10 +263,7 @@ const AgentTestingDashboard: React.FC = () => {
                 <Card className="mt-4 bg-muted/50">
                   <CardContent className="p-6 text-center text-muted-foreground">
                     <Search className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                    <p>
-                      No search results yet. Use the form to find sales
-                      contacts.
-                    </p>
+                    <p>No results yet. Use the form to find market matches.</p>
                   </CardContent>
                 </Card>
               ) : currentResult.status === "loading" ? (
@@ -305,8 +275,7 @@ const AgentTestingDashboard: React.FC = () => {
                         Processing your request
                       </h3>
                       <p className="text-muted-foreground text-center max-w-md">
-                        Searching for contacts at {currentResult.company} for
-                        your product...
+                        Analyzing market data for {currentResult.company}...
                       </p>
                     </div>
                   </CardContent>
@@ -340,7 +309,7 @@ const AgentTestingDashboard: React.FC = () => {
                 <Card className="mt-4">
                   <CardHeader>
                     <CardTitle className="text-lg">
-                      Results for {currentResult.company}
+                      Market Match Results for {currentResult.company}
                     </CardTitle>
                     <CardDescription className="flex items-center">
                       <Clock className="h-3 w-3 mr-1" />
@@ -351,9 +320,9 @@ const AgentTestingDashboard: React.FC = () => {
                     <div className="flex justify-between items-center mb-4">
                       <Tabs defaultValue="formatted" className="flex-1">
                         <TabsList>
-                          <TabsTrigger value="formatted">Formatted</TabsTrigger>
-                          <TabsTrigger value="raw">Raw JSON</TabsTrigger>
-                          <TabsTrigger value="markdown">Markdown</TabsTrigger>
+                          <TabsTrigger value="formatted">
+                            Market Analysis
+                          </TabsTrigger>
                         </TabsList>
                         <Button
                           variant="outline"
@@ -367,34 +336,6 @@ const AgentTestingDashboard: React.FC = () => {
                         </Button>
 
                         <TabsContent value="formatted">
-                          <Card className="bg-white text-gray-900 overflow-hidden">
-                            <CardContent className="p-4">
-                              <MarkdownDisplay
-                                content={
-                                  currentResult.result
-                                    ? generateMarkdown(currentResult.result)
-                                    : "No results available"
-                                }
-                                maxHeight="400px"
-                                className="p-4 markdown-content"
-                              />
-                            </CardContent>
-                          </Card>
-                        </TabsContent>
-
-                        <TabsContent value="raw">
-                          <Card className="bg-gray-950 text-gray-50 font-mono text-sm overflow-hidden">
-                            <CardContent className="p-4">
-                              <ScrollArea className="h-[400px] w-full">
-                                <pre>
-                                  {formatJson(currentResult.result || {})}
-                                </pre>
-                              </ScrollArea>
-                            </CardContent>
-                          </Card>
-                        </TabsContent>
-
-                        <TabsContent value="markdown">
                           <Card className="bg-white text-gray-900 overflow-hidden">
                             <CardContent className="p-4">
                               <MarkdownDisplay
@@ -493,4 +434,4 @@ const AgentTestingDashboard: React.FC = () => {
   );
 };
 
-export default AgentTestingDashboard;
+export default MarketMatchDashboard;

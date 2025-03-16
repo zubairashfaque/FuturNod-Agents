@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import {
   Card,
   CardContent,
@@ -33,13 +33,17 @@ import {
   useSalesContactFinder,
   SearchResult,
 } from "@/api/hooks/useSalesContactFinder";
-import LeadGenieInfo from "../agent-playground/LeadGenieInfo";
+import LeadGenieScoreInfo from "./LeadGenieScoreInfo";
 import { Link } from "react-router-dom";
+import { LeadGenieScoreParams } from "@/api/proxy";
 import MarkdownDisplay from "@/components/ui/markdown-display";
 
-const AgentTestingDashboard: React.FC = () => {
+const LeadGenieScoreDashboard: React.FC = () => {
   const [company, setCompany] = useState("");
-  const [product, setProduct] = useState("");
+  const [productName, setProductName] = useState("");
+  const [productDescription, setProductDescription] = useState("");
+  const [icpDescription, setIcpDescription] = useState("");
+  const [formResponse, setFormResponse] = useState("");
   const [isResultExpanded, setIsResultExpanded] = useState(true);
   const [isHistoryExpanded, setIsHistoryExpanded] = useState(true);
   const [showInfo, setShowInfo] = useState(false);
@@ -49,14 +53,23 @@ const AgentTestingDashboard: React.FC = () => {
     currentResult,
     searchHistory,
     checkHealth: manualHealthCheck,
-    submitSearch,
+    submitLeadGenieScore,
     loadHistoryItem,
   } = useSalesContactFinder();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsResultExpanded(true);
-    await submitSearch(company, product);
+
+    const params: LeadGenieScoreParams = {
+      company,
+      product_name: productName,
+      product_description: productDescription,
+      icp_description: icpDescription,
+      form_response: formResponse,
+    };
+
+    await submitLeadGenieScore(params);
   };
 
   const handleLoadHistoryItem = (item: SearchResult) => {
@@ -65,89 +78,53 @@ const AgentTestingDashboard: React.FC = () => {
   };
 
   const formatJson = (json: any) => {
-    try {
-      return JSON.stringify(json, null, 2);
-    } catch (error) {
-      console.error("Error formatting JSON:", error);
-      return "Error formatting JSON data";
-    }
+    return JSON.stringify(json, null, 2);
   };
 
   const generateMarkdown = (result: any) => {
     if (!result) return "No data available";
 
-    try {
-      // If the result already contains raw markdown, return it
-      if (result.raw_markdown) {
-        // Clean up the markdown by removing markdown code block syntax
-        let cleanMarkdown = result.raw_markdown;
-        cleanMarkdown = cleanMarkdown.replace(/```markdown\n/g, "");
-        cleanMarkdown = cleanMarkdown.replace(/```$/g, "");
-        return cleanMarkdown;
-      }
-
-      // If the result is a string (like from ContractVista), return it directly
-      if (typeof result === "string") {
-        return result;
-      }
-
-      // If the result has file_output (like from ContractVista), use that
-      if (result.file_output && typeof result.file_output === "string") {
-        return result.file_output;
-      }
-
-      // Otherwise generate markdown from structured data with proper markdown formatting
-      let markdown = `# Results for ${currentResult?.company}\n\n`;
-      markdown += `*Generated on: ${new Date(currentResult?.timestamp || "").toLocaleString()}*\n\n`;
-
-      // Handle different agent types based on URL path
-      if (window.location.pathname.includes("contract-vista")) {
-        markdown += `## Contract Analysis\n\n`;
-        if (result.analysis) {
-          markdown += result.analysis;
-        } else {
-          markdown += JSON.stringify(result, null, 2);
-        }
-        return markdown;
-      }
-
-      // Default format for sales contact finder
-      markdown += `## Recommended Contacts\n\n`;
-      if (result.contacts && Array.isArray(result.contacts)) {
-        result.contacts.forEach((contact: any, index: number) => {
-          markdown += `### Contact ${index + 1}: ${contact.name || "Unknown"}\n\n`;
-          markdown += `**Title:** ${contact.title || "N/A"}\n\n`;
-          markdown += `**Email:** ${contact.email || "N/A"}\n\n`;
-          markdown += `**Confidence:** ${contact.confidence ? Math.round(contact.confidence * 100) : "N/A"}%\n\n`;
-        });
-      } else {
-        markdown += `*No contact information available.*\n\n`;
-      }
-
-      markdown += `## Company Information\n\n`;
-      if (result.company_info) {
-        markdown += `**Name:** ${result.company_info.name || "N/A"}\n\n`;
-        markdown += `**Industry:** ${result.company_info.industry || "N/A"}\n\n`;
-        markdown += `**Size:** ${result.company_info.size || "N/A"}\n\n`;
-        markdown += `**Location:** ${result.company_info.location || "N/A"}\n\n`;
-      } else {
-        markdown += `*No company information available.*\n\n`;
-      }
-
-      markdown += `## Product Match Analysis\n\n`;
-      if (result.product_match) {
-        markdown += `**Relevance:** ${result.product_match.relevance ? Math.round(result.product_match.relevance * 100) + "%" : "N/A"}\n\n`;
-        markdown += `**Target Department:** ${result.product_match.department || "N/A"}\n\n`;
-        markdown += `**Potential Use Case:** ${result.product_match.potential_use_case || "N/A"}\n\n`;
-      } else {
-        markdown += `*No product match analysis available.*\n\n`;
-      }
-
-      return markdown;
-    } catch (error) {
-      console.error("Error generating markdown:", error);
-      return "Error generating markdown from result data. See raw JSON for details.";
+    // If the result already contains raw markdown, return it
+    if (result.raw_markdown) {
+      // Clean up the markdown by removing markdown code block syntax
+      let cleanMarkdown = result.raw_markdown;
+      cleanMarkdown = cleanMarkdown.replace(/```markdown\n/g, "");
+      cleanMarkdown = cleanMarkdown.replace(/```$/g, "");
+      return cleanMarkdown;
     }
+
+    // Otherwise generate markdown from structured data with proper markdown formatting
+    let markdown = `# Lead Genie Score Results for ${currentResult?.company}\n\n`;
+    markdown += `*Generated on: ${new Date(currentResult?.timestamp || "").toLocaleString()}*\n\n`;
+
+    // Parse the lead score data
+    if (result.lead_score) {
+      markdown += `## Lead Score: ${result.lead_score}/10\n\n`;
+    }
+
+    if (result.use_case_summary) {
+      markdown += `## Use Case Summary\n\n${result.use_case_summary}\n\n`;
+    }
+
+    if (result.talking_points && Array.isArray(result.talking_points)) {
+      markdown += `## Recommended Talking Points\n\n`;
+      result.talking_points.forEach((point: string, index: number) => {
+        markdown += `${index + 1}. ${point}\n`;
+      });
+      markdown += `\n`;
+    }
+
+    // If no structured data was found, add a default message
+    if (
+      !result.lead_score &&
+      !result.use_case_summary &&
+      !result.talking_points
+    ) {
+      markdown += `## Lead Score Analysis\n\n`;
+      markdown += `*No structured data available. Please see the raw JSON for details.*\n\n`;
+    }
+
+    return markdown;
   };
 
   const downloadMarkdown = () => {
@@ -158,7 +135,7 @@ const AgentTestingDashboard: React.FC = () => {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `sales-contacts-${currentResult.company.replace(/\s+/g, "-").toLowerCase()}-${new Date().toISOString().split("T")[0]}.md`;
+    a.download = `lead-score-${currentResult.company.replace(/\s+/g, "-").toLowerCase()}-${new Date().toISOString().split("T")[0]}.md`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -175,22 +152,24 @@ const AgentTestingDashboard: React.FC = () => {
           >
             <ArrowLeft className="h-5 w-5" />
           </Link>
-          <h1 className="text-3xl font-bold">LeadGenie - AI Agent Testing</h1>
+          <h1 className="text-3xl font-bold">
+            Lead Genie Score - AI Agent Testing
+          </h1>
         </div>
         <div className="flex justify-between items-center">
           <p className="text-gray-500">
-            Test the sales contact finder AI agent by inputting parameters and
-            viewing results.
+            Test the lead scoring AI agent by inputting parameters and viewing
+            results.
           </p>
           <Button variant="outline" onClick={() => setShowInfo(!showInfo)}>
-            {showInfo ? "Hide Info" : "About LeadGenie"}
+            {showInfo ? "Hide Info" : "About Lead Genie Score"}
           </Button>
         </div>
       </div>
 
       {showInfo && (
         <div className="mb-8">
-          <LeadGenieInfo />
+          <LeadGenieScoreInfo />
         </div>
       )}
 
@@ -198,20 +177,20 @@ const AgentTestingDashboard: React.FC = () => {
         {/* Form Section */}
         <Card className="lg:col-span-1">
           <CardHeader>
-            <CardTitle>Search Parameters</CardTitle>
+            <CardTitle>Lead Parameters</CardTitle>
             <CardDescription>
-              Enter details to find sales contacts
+              Enter details to analyze and score the lead
             </CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
                 <label htmlFor="company" className="text-sm font-medium">
-                  Target Company
+                  Company Name
                 </label>
                 <Input
                   id="company"
-                  placeholder="e.g. Acme Corporation"
+                  placeholder="e.g. TechSolutions Inc."
                   value={company}
                   onChange={(e) => setCompany(e.target.value)}
                   disabled={isLoading}
@@ -219,16 +198,60 @@ const AgentTestingDashboard: React.FC = () => {
               </div>
 
               <div className="space-y-2">
-                <label htmlFor="product" className="text-sm font-medium">
+                <label htmlFor="productName" className="text-sm font-medium">
+                  Your Product Name
+                </label>
+                <Input
+                  id="productName"
+                  placeholder="e.g. LeadGenie"
+                  value={productName}
+                  onChange={(e) => setProductName(e.target.value)}
+                  disabled={isLoading}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label
+                  htmlFor="productDescription"
+                  className="text-sm font-medium"
+                >
                   Product Description
                 </label>
                 <Textarea
-                  id="product"
+                  id="productDescription"
                   placeholder="Describe your product or service..."
-                  value={product}
-                  onChange={(e) => setProduct(e.target.value)}
+                  value={productDescription}
+                  onChange={(e) => setProductDescription(e.target.value)}
                   disabled={isLoading}
-                  className="min-h-[100px]"
+                  className="min-h-[80px]"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label htmlFor="icpDescription" className="text-sm font-medium">
+                  Ideal Customer Profile
+                </label>
+                <Textarea
+                  id="icpDescription"
+                  placeholder="Describe your ideal customer..."
+                  value={icpDescription}
+                  onChange={(e) => setIcpDescription(e.target.value)}
+                  disabled={isLoading}
+                  className="min-h-[80px]"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label htmlFor="formResponse" className="text-sm font-medium">
+                  Lead Form Response
+                </label>
+                <Textarea
+                  id="formResponse"
+                  placeholder="Paste the lead's form response or inquiry..."
+                  value={formResponse}
+                  onChange={(e) => setFormResponse(e.target.value)}
+                  disabled={isLoading}
+                  className="min-h-[80px]"
                 />
               </div>
 
@@ -242,7 +265,7 @@ const AgentTestingDashboard: React.FC = () => {
                   ) : (
                     <>
                       <Search className="mr-2 h-4 w-4" />
-                      Find Contacts
+                      Score Lead
                     </>
                   )}
                 </Button>
@@ -291,8 +314,7 @@ const AgentTestingDashboard: React.FC = () => {
                   <CardContent className="p-6 text-center text-muted-foreground">
                     <Search className="h-12 w-12 mx-auto mb-4 opacity-50" />
                     <p>
-                      No search results yet. Use the form to find sales
-                      contacts.
+                      No results yet. Use the form to analyze and score a lead.
                     </p>
                   </CardContent>
                 </Card>
@@ -305,8 +327,7 @@ const AgentTestingDashboard: React.FC = () => {
                         Processing your request
                       </h3>
                       <p className="text-muted-foreground text-center max-w-md">
-                        Searching for contacts at {currentResult.company} for
-                        your product...
+                        Analyzing lead data for {currentResult.company}...
                       </p>
                     </div>
                   </CardContent>
@@ -340,7 +361,7 @@ const AgentTestingDashboard: React.FC = () => {
                 <Card className="mt-4">
                   <CardHeader>
                     <CardTitle className="text-lg">
-                      Results for {currentResult.company}
+                      Lead Score Results for {currentResult.company}
                     </CardTitle>
                     <CardDescription className="flex items-center">
                       <Clock className="h-3 w-3 mr-1" />
@@ -351,9 +372,9 @@ const AgentTestingDashboard: React.FC = () => {
                     <div className="flex justify-between items-center mb-4">
                       <Tabs defaultValue="formatted" className="flex-1">
                         <TabsList>
-                          <TabsTrigger value="formatted">Formatted</TabsTrigger>
-                          <TabsTrigger value="raw">Raw JSON</TabsTrigger>
-                          <TabsTrigger value="markdown">Markdown</TabsTrigger>
+                          <TabsTrigger value="formatted">
+                            Lead Analysis
+                          </TabsTrigger>
                         </TabsList>
                         <Button
                           variant="outline"
@@ -367,34 +388,6 @@ const AgentTestingDashboard: React.FC = () => {
                         </Button>
 
                         <TabsContent value="formatted">
-                          <Card className="bg-white text-gray-900 overflow-hidden">
-                            <CardContent className="p-4">
-                              <MarkdownDisplay
-                                content={
-                                  currentResult.result
-                                    ? generateMarkdown(currentResult.result)
-                                    : "No results available"
-                                }
-                                maxHeight="400px"
-                                className="p-4 markdown-content"
-                              />
-                            </CardContent>
-                          </Card>
-                        </TabsContent>
-
-                        <TabsContent value="raw">
-                          <Card className="bg-gray-950 text-gray-50 font-mono text-sm overflow-hidden">
-                            <CardContent className="p-4">
-                              <ScrollArea className="h-[400px] w-full">
-                                <pre>
-                                  {formatJson(currentResult.result || {})}
-                                </pre>
-                              </ScrollArea>
-                            </CardContent>
-                          </Card>
-                        </TabsContent>
-
-                        <TabsContent value="markdown">
                           <Card className="bg-white text-gray-900 overflow-hidden">
                             <CardContent className="p-4">
                               <MarkdownDisplay
@@ -493,4 +486,4 @@ const AgentTestingDashboard: React.FC = () => {
   );
 };
 
-export default AgentTestingDashboard;
+export default LeadGenieScoreDashboard;

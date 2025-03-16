@@ -7,7 +7,6 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
@@ -28,18 +27,18 @@ import {
   ArrowLeft,
   Download,
 } from "lucide-react";
-import { motion } from "framer-motion";
 import {
   useSalesContactFinder,
   SearchResult,
 } from "@/api/hooks/useSalesContactFinder";
-import LeadGenieInfo from "../agent-playground/LeadGenieInfo";
+import ContractVistaInfo from "./ContractVistaInfo";
 import { Link } from "react-router-dom";
 import MarkdownDisplay from "@/components/ui/markdown-display";
 
-const AgentTestingDashboard: React.FC = () => {
-  const [company, setCompany] = useState("");
-  const [product, setProduct] = useState("");
+const ContractVistaDashboard: React.FC = () => {
+  const [query, setQuery] = useState(
+    "What are the differences in how contracts define warranties within creditcardscominc and digitalcinemadestination",
+  );
   const [isResultExpanded, setIsResultExpanded] = useState(true);
   const [isHistoryExpanded, setIsHistoryExpanded] = useState(true);
   const [showInfo, setShowInfo] = useState(false);
@@ -56,7 +55,7 @@ const AgentTestingDashboard: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsResultExpanded(true);
-    await submitSearch(company, product);
+    await submitSearch("contract-vista", query);
   };
 
   const handleLoadHistoryItem = (item: SearchResult) => {
@@ -86,64 +85,29 @@ const AgentTestingDashboard: React.FC = () => {
         return cleanMarkdown;
       }
 
-      // If the result is a string (like from ContractVista), return it directly
+      // If the result is a string, return it directly
       if (typeof result === "string") {
         return result;
       }
 
-      // If the result has file_output (like from ContractVista), use that
+      // If the result has file_output, use that
       if (result.file_output && typeof result.file_output === "string") {
         return result.file_output;
       }
 
       // Otherwise generate markdown from structured data with proper markdown formatting
-      let markdown = `# Results for ${currentResult?.company}\n\n`;
+      let markdown = `# Contract Analysis Results\n\n`;
       markdown += `*Generated on: ${new Date(currentResult?.timestamp || "").toLocaleString()}*\n\n`;
 
-      // Handle different agent types based on URL path
-      if (window.location.pathname.includes("contract-vista")) {
-        markdown += `## Contract Analysis\n\n`;
-        if (result.analysis) {
-          markdown += result.analysis;
-        } else {
-          markdown += JSON.stringify(result, null, 2);
-        }
-        return markdown;
-      }
+      markdown += `## Query\n\n${query}\n\n`;
 
-      // Default format for sales contact finder
-      markdown += `## Recommended Contacts\n\n`;
-      if (result.contacts && Array.isArray(result.contacts)) {
-        result.contacts.forEach((contact: any, index: number) => {
-          markdown += `### Contact ${index + 1}: ${contact.name || "Unknown"}\n\n`;
-          markdown += `**Title:** ${contact.title || "N/A"}\n\n`;
-          markdown += `**Email:** ${contact.email || "N/A"}\n\n`;
-          markdown += `**Confidence:** ${contact.confidence ? Math.round(contact.confidence * 100) : "N/A"}%\n\n`;
-        });
+      if (result.analysis) {
+        markdown += `## Analysis\n\n${result.analysis}\n\n`;
       } else {
-        markdown += `*No contact information available.*\n\n`;
+        markdown += `## Analysis\n\n*No analysis available. Please check the raw JSON output.*\n\n`;
       }
 
-      markdown += `## Company Information\n\n`;
-      if (result.company_info) {
-        markdown += `**Name:** ${result.company_info.name || "N/A"}\n\n`;
-        markdown += `**Industry:** ${result.company_info.industry || "N/A"}\n\n`;
-        markdown += `**Size:** ${result.company_info.size || "N/A"}\n\n`;
-        markdown += `**Location:** ${result.company_info.location || "N/A"}\n\n`;
-      } else {
-        markdown += `*No company information available.*\n\n`;
-      }
-
-      markdown += `## Product Match Analysis\n\n`;
-      if (result.product_match) {
-        markdown += `**Relevance:** ${result.product_match.relevance ? Math.round(result.product_match.relevance * 100) + "%" : "N/A"}\n\n`;
-        markdown += `**Target Department:** ${result.product_match.department || "N/A"}\n\n`;
-        markdown += `**Potential Use Case:** ${result.product_match.potential_use_case || "N/A"}\n\n`;
-      } else {
-        markdown += `*No product match analysis available.*\n\n`;
-      }
-
-      return markdown;
+      return markdown || "No content available";
     } catch (error) {
       console.error("Error generating markdown:", error);
       return "Error generating markdown from result data. See raw JSON for details.";
@@ -158,12 +122,17 @@ const AgentTestingDashboard: React.FC = () => {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `sales-contacts-${currentResult.company.replace(/\s+/g, "-").toLowerCase()}-${new Date().toISOString().split("T")[0]}.md`;
+    a.download = `contract-analysis-${new Date().toISOString().split("T")[0]}.md`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
   };
+
+  // Filter history items to only show contract-vista related items
+  const filteredHistory = searchHistory.filter(
+    (item) => item.company === "contract-vista",
+  );
 
   return (
     <div className="container mx-auto p-6 max-w-6xl">
@@ -175,22 +144,24 @@ const AgentTestingDashboard: React.FC = () => {
           >
             <ArrowLeft className="h-5 w-5" />
           </Link>
-          <h1 className="text-3xl font-bold">LeadGenie - AI Agent Testing</h1>
+          <h1 className="text-3xl font-bold">
+            ContractVista - Contract Analysis
+          </h1>
         </div>
         <div className="flex justify-between items-center">
           <p className="text-gray-500">
-            Test the sales contact finder AI agent by inputting parameters and
-            viewing results.
+            Analyze legal contracts to identify similarities, differences, and
+            potential conflicts.
           </p>
           <Button variant="outline" onClick={() => setShowInfo(!showInfo)}>
-            {showInfo ? "Hide Info" : "About LeadGenie"}
+            {showInfo ? "Hide Info" : "About ContractVista"}
           </Button>
         </div>
       </div>
 
       {showInfo && (
         <div className="mb-8">
-          <LeadGenieInfo />
+          <ContractVistaInfo />
         </div>
       )}
 
@@ -198,37 +169,24 @@ const AgentTestingDashboard: React.FC = () => {
         {/* Form Section */}
         <Card className="lg:col-span-1">
           <CardHeader>
-            <CardTitle>Search Parameters</CardTitle>
+            <CardTitle>Query Parameters</CardTitle>
             <CardDescription>
-              Enter details to find sales contacts
+              Enter your contract analysis query
             </CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
-                <label htmlFor="company" className="text-sm font-medium">
-                  Target Company
-                </label>
-                <Input
-                  id="company"
-                  placeholder="e.g. Acme Corporation"
-                  value={company}
-                  onChange={(e) => setCompany(e.target.value)}
-                  disabled={isLoading}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <label htmlFor="product" className="text-sm font-medium">
-                  Product Description
+                <label htmlFor="query" className="text-sm font-medium">
+                  Analysis Query
                 </label>
                 <Textarea
-                  id="product"
-                  placeholder="Describe your product or service..."
-                  value={product}
-                  onChange={(e) => setProduct(e.target.value)}
+                  id="query"
+                  placeholder="e.g. Compare warranty clauses between contracts A and B"
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
                   disabled={isLoading}
-                  className="min-h-[100px]"
+                  className="min-h-[200px]"
                 />
               </div>
 
@@ -242,7 +200,7 @@ const AgentTestingDashboard: React.FC = () => {
                   ) : (
                     <>
                       <Search className="mr-2 h-4 w-4" />
-                      Find Contacts
+                      Analyze Contracts
                     </>
                   )}
                 </Button>
@@ -291,8 +249,8 @@ const AgentTestingDashboard: React.FC = () => {
                   <CardContent className="p-6 text-center text-muted-foreground">
                     <Search className="h-12 w-12 mx-auto mb-4 opacity-50" />
                     <p>
-                      No search results yet. Use the form to find sales
-                      contacts.
+                      No analysis results yet. Use the form to analyze
+                      contracts.
                     </p>
                   </CardContent>
                 </Card>
@@ -305,8 +263,7 @@ const AgentTestingDashboard: React.FC = () => {
                         Processing your request
                       </h3>
                       <p className="text-muted-foreground text-center max-w-md">
-                        Searching for contacts at {currentResult.company} for
-                        your product...
+                        Analyzing contracts based on your query...
                       </p>
                     </div>
                   </CardContent>
@@ -339,9 +296,7 @@ const AgentTestingDashboard: React.FC = () => {
               ) : (
                 <Card className="mt-4">
                   <CardHeader>
-                    <CardTitle className="text-lg">
-                      Results for {currentResult.company}
-                    </CardTitle>
+                    <CardTitle className="text-lg">Contract Analysis</CardTitle>
                     <CardDescription className="flex items-center">
                       <Clock className="h-3 w-3 mr-1" />
                       {new Date(currentResult.timestamp).toLocaleString()}
@@ -351,9 +306,9 @@ const AgentTestingDashboard: React.FC = () => {
                     <div className="flex justify-between items-center mb-4">
                       <Tabs defaultValue="formatted" className="flex-1">
                         <TabsList>
-                          <TabsTrigger value="formatted">Formatted</TabsTrigger>
-                          <TabsTrigger value="raw">Raw JSON</TabsTrigger>
-                          <TabsTrigger value="markdown">Markdown</TabsTrigger>
+                          <TabsTrigger value="formatted">
+                            Contract Analysis
+                          </TabsTrigger>
                         </TabsList>
                         <Button
                           variant="outline"
@@ -376,35 +331,7 @@ const AgentTestingDashboard: React.FC = () => {
                                     : "No results available"
                                 }
                                 maxHeight="400px"
-                                className="p-4 markdown-content"
-                              />
-                            </CardContent>
-                          </Card>
-                        </TabsContent>
-
-                        <TabsContent value="raw">
-                          <Card className="bg-gray-950 text-gray-50 font-mono text-sm overflow-hidden">
-                            <CardContent className="p-4">
-                              <ScrollArea className="h-[400px] w-full">
-                                <pre>
-                                  {formatJson(currentResult.result || {})}
-                                </pre>
-                              </ScrollArea>
-                            </CardContent>
-                          </Card>
-                        </TabsContent>
-
-                        <TabsContent value="markdown">
-                          <Card className="bg-white text-gray-900 overflow-hidden">
-                            <CardContent className="p-4">
-                              <MarkdownDisplay
-                                content={
-                                  currentResult.result
-                                    ? generateMarkdown(currentResult.result)
-                                    : "No results available"
-                                }
-                                maxHeight="400px"
-                                className="p-4 markdown-content"
+                                className="p-4"
                               />
                             </CardContent>
                           </Card>
@@ -438,7 +365,7 @@ const AgentTestingDashboard: React.FC = () => {
             <Separator className="my-2" />
 
             <CollapsibleContent>
-              {searchHistory.length === 0 ? (
+              {filteredHistory.length === 0 ? (
                 <Card className="mt-4 bg-muted/50">
                   <CardContent className="p-6 text-center text-muted-foreground">
                     <Clock className="h-12 w-12 mx-auto mb-4 opacity-50" />
@@ -450,7 +377,7 @@ const AgentTestingDashboard: React.FC = () => {
               ) : (
                 <ScrollArea className="h-[300px] mt-4">
                   <div className="space-y-2">
-                    {searchHistory.map((item) => (
+                    {filteredHistory.map((item) => (
                       <Card
                         key={item.id}
                         className={`cursor-pointer hover:bg-muted/50 transition-colors ${currentResult?.id === item.id ? "border-primary" : ""}`}
@@ -459,7 +386,7 @@ const AgentTestingDashboard: React.FC = () => {
                         <CardContent className="p-4">
                           <div className="flex justify-between items-start">
                             <div>
-                              <h4 className="font-medium">{item.company}</h4>
+                              <h4 className="font-medium">Contract Analysis</h4>
                               <p className="text-sm text-muted-foreground truncate max-w-[300px]">
                                 {item.product}
                               </p>
@@ -493,4 +420,4 @@ const AgentTestingDashboard: React.FC = () => {
   );
 };
 
-export default AgentTestingDashboard;
+export default ContractVistaDashboard;

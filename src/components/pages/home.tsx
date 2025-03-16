@@ -108,10 +108,10 @@ export default function LandingPage() {
           </h3>
           <div className="flex justify-center space-x-6 text-xl text-blue-600">
             <Link
-              to="/agent-testing"
+              to="/agent-playground"
               className="flex items-center hover:underline"
             >
-              Try the AI Agent <ChevronRight className="h-4 w-4" />
+              Try the AI Agents <ChevronRight className="h-4 w-4" />
             </Link>
             <Link to="/signup" className="flex items-center hover:underline">
               Get started <ChevronRight className="h-4 w-4" />

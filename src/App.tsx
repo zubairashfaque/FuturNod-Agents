@@ -7,9 +7,17 @@ import Dashboard from "./components/pages/dashboard";
 import Success from "./components/pages/success";
 import Home from "./components/pages/home";
 import AgentTesting from "./components/pages/agent-testing";
+import AgentPlaygroundPage from "./components/pages/agent-playground";
 import { AuthProvider, useAuth } from "../supabase/auth";
 import { Toaster } from "./components/ui/toaster";
 import { LoadingScreen, LoadingSpinner } from "./components/ui/loading-spinner";
+import LeadGenieScorePage from "./components/pages/lead-genie-score";
+import MarketMatchPage from "./components/pages/market-match";
+import ContractVistaPage from "./components/pages/contract-vista";
+import DealCraftPage from "./components/pages/deal-craft";
+import BriefVistaPage from "./components/pages/brief-vista";
+import ContactVistaPage from "./components/pages/contact-vista";
+import PDFPitchPage from "./components/pages/pdf-pitch";
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
@@ -45,6 +53,70 @@ function AppRoutes() {
           element={
             <PrivateRoute>
               <AgentTesting />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/lead-genie-score"
+          element={
+            <PrivateRoute>
+              <LeadGenieScorePage />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/market-match"
+          element={
+            <PrivateRoute>
+              <MarketMatchPage />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/contract-vista"
+          element={
+            <PrivateRoute>
+              <ContractVistaPage />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/deal-craft"
+          element={
+            <PrivateRoute>
+              <DealCraftPage />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/brief-vista"
+          element={
+            <PrivateRoute>
+              <BriefVistaPage />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/contact-vista"
+          element={
+            <PrivateRoute>
+              <ContactVistaPage />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/pdf-pitch"
+          element={
+            <PrivateRoute>
+              <PDFPitchPage />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/agent-playground"
+          element={
+            <PrivateRoute>
+              <AgentPlaygroundPage />
             </PrivateRoute>
           }
         />
