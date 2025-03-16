@@ -297,14 +297,25 @@ const PDFPitchDashboard = () => {
                   <div className="mt-4">
                     <ErrorBoundary>
                       <div className="bg-white p-4 rounded-md border border-gray-200 overflow-auto">
-                        {/* Fix: Wrap ReactMarkdown in a div with className instead of passing className directly */}
-                        <div className="markdown-content">
-                          <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                            {currentResult.result?.file_output ||
-                              currentResult.result?.raw_markdown ||
-                              "No content available"}
-                          </ReactMarkdown>
-                        </div>
+                        {/* Use the components prop to customize elements without using className */}
+                        <ReactMarkdown 
+                          remarkPlugins={[remarkGfm]}
+                          components={{
+                            // Define components without className props
+                            // This approach works with newer versions of react-markdown
+                            p: ({node, ...props}) => <p style={{marginBottom: '1rem'}} {...props} />,
+                            h1: ({node, ...props}) => <h1 style={{fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '0.5rem'}} {...props} />,
+                            h2: ({node, ...props}) => <h2 style={{fontSize: '1.25rem', fontWeight: 'bold', marginBottom: '0.5rem'}} {...props} />,
+                            ul: ({node, ...props}) => <ul style={{listStyleType: 'disc', paddingLeft: '1.5rem', marginBottom: '1rem'}} {...props} />,
+                            ol: ({node, ...props}) => <ol style={{listStyleType: 'decimal', paddingLeft: '1.5rem', marginBottom: '1rem'}} {...props} />,
+                            li: ({node, ...props}) => <li style={{marginBottom: '0.25rem'}} {...props} />,
+                            a: ({node, ...props}) => <a style={{color: '#3b82f6', textDecoration: 'underline'}} {...props} />
+                          }}
+                        >
+                          {currentResult.result?.file_output ||
+                            currentResult.result?.raw_markdown ||
+                            "No content available"}
+                        </ReactMarkdown>
                       </div>
                     </ErrorBoundary>
                   </div>
