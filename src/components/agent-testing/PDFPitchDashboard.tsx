@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -19,7 +19,7 @@ import PDFPitchInfo from "./PDFPitchInfo";
 import { useSalesContactFinder } from "@/api/hooks/useSalesContactFinder";
 import { Link } from "react-router-dom";
 import ErrorBoundary from "@/components/ui/ErrorBoundary";
-// Remove ReactMarkdown and remarkGfm imports completely
+// No ReactMarkdown import needed
 
 const PDFPitchDashboard = () => {
   // Form state for company info
@@ -35,8 +35,8 @@ const PDFPitchDashboard = () => {
   const [leadName, setLeadName] = useState("Sarah Williams");
   const [leadCompany, setLeadCompany] = useState("DataDriven Inc.");
   const [leadIndustry, setLeadIndustry] = useState("Financial Services");
-
   const [showInfo, setShowInfo] = useState(false);
+  const [parsedMarkdown, setParsedMarkdown] = useState("");
 
   // API integration
   const {
@@ -47,6 +47,52 @@ const PDFPitchDashboard = () => {
     submitSearch,
     loadHistoryItem,
   } = useSalesContactFinder();
+
+  // Basic markdown parser function
+  const parseMarkdown = (markdown) => {
+    if (!markdown) return "";
+    
+    // Process headers
+    let html = markdown
+      // Headers (h1, h2, h3)
+      .replace(/^# (.*$)/gm, '<h1>$1</h1>')
+      .replace(/^## (.*$)/gm, '<h2>$1</h2>')
+      .replace(/^### (.*$)/gm, '<h3>$1</h3>')
+      .replace(/^#### (.*$)/gm, '<h4>$1</h4>')
+      
+      // Bold and italic
+      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+      .replace(/\*(.*?)\*/g, '<em>$1</em>')
+      
+      // Lists
+      .replace(/^\- (.*$)/gm, '<li>$1</li>')
+      .replace(/^\d+\. (.*$)/gm, '<li>$1</li>')
+      
+      // Links
+      .replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2">$1</a>')
+      
+      // Line breaks
+      .replace(/\n/g, '<br />');
+
+    // Wrap lists in <ul> or <ol> (simple version)
+    html = html.replace(/<li>.*?<\/li>/g, match => {
+      return '<ul>' + match + '</ul>';
+    });
+    
+    // Remove duplicate <ul> tags (simple cleanup)
+    html = html.replace(/<\/ul><ul>/g, '');
+    
+    return html;
+  };
+
+  useEffect(() => {
+    if (currentResult?.status === "success") {
+      const content = currentResult.result?.file_output || 
+                      currentResult.result?.raw_markdown || 
+                      "No content available";
+      setParsedMarkdown(parseMarkdown(content));
+    }
+  }, [currentResult]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -104,13 +150,6 @@ const PDFPitchDashboard = () => {
       console.error("Error downloading markdown:", error);
       alert("Failed to download the pitch. Please try again.");
     }
-  };
-
-  // Get the content as plain text
-  const getContent = () => {
-    return currentResult?.result?.file_output || 
-           currentResult?.result?.raw_markdown || 
-           "No content available";
   };
 
   return (
@@ -302,11 +341,12 @@ const PDFPitchDashboard = () => {
                   </div>
                   <div className="mt-4">
                     <ErrorBoundary>
-                      {/* Replace ReactMarkdown completely with a pre tag for displaying the content */}
                       <div className="bg-white p-4 rounded-md border border-gray-200 overflow-auto">
-                        <pre style={{ whiteSpace: 'pre-wrap', fontFamily: 'inherit' }}>
-                          {getContent()}
-                        </pre>
+                        {/* Render HTML from our custom markdown parser */}
+                        <div 
+                          className="markdown-content" 
+                          dangerouslySetInnerHTML={{ __html: parsedMarkdown }}
+                        />
                       </div>
                     </ErrorBoundary>
                   </div>
