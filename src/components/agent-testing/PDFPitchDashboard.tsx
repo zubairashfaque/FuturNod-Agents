@@ -297,12 +297,14 @@ const PDFPitchDashboard = () => {
                   <div className="mt-4">
                     <ErrorBoundary>
                       <div className="bg-white p-4 rounded-md border border-gray-200 overflow-auto">
-                        {/* Ensure no className is passed to ReactMarkdown */}
-                        <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                          {currentResult.result?.file_output ||
-                            currentResult.result?.raw_markdown ||
-                            "No content available"}
-                        </ReactMarkdown>
+                        {/* Fix: Wrap ReactMarkdown in a div with className instead of passing className directly */}
+                        <div className="markdown-content">
+                          <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                            {currentResult.result?.file_output ||
+                              currentResult.result?.raw_markdown ||
+                              "No content available"}
+                          </ReactMarkdown>
+                        </div>
                       </div>
                     </ErrorBoundary>
                   </div>
