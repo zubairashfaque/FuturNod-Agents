@@ -324,15 +324,25 @@ const ContractVistaDashboard: React.FC = () => {
                         <TabsContent value="formatted">
                           <Card className="bg-white text-gray-900 overflow-hidden">
                             <CardContent className="p-4">
-                              <MarkdownDisplay
-                                content={
-                                  currentResult.result
-                                    ? generateMarkdown(currentResult.result)
-                                    : "No results available"
-                                }
-                                maxHeight="400px"
-                                className="p-4"
-                              />
+                              <ErrorBoundary>
+                                <ErrorBoundary>
+                                  <div
+                                    className="bg-white p-4 rounded-md border border-gray-200 overflow-auto"
+                                    style={{ maxHeight: "400px" }}
+                                  >
+                                    <div className="whitespace-pre-wrap">
+                                      {currentResult.result
+                                        ? typeof currentResult.result ===
+                                          "string"
+                                          ? currentResult.result
+                                          : generateMarkdown(
+                                              currentResult.result,
+                                            )
+                                        : "No results available"}
+                                    </div>
+                                  </div>
+                                </ErrorBoundary>
+                              </ErrorBoundary>
                             </CardContent>
                           </Card>
                         </TabsContent>

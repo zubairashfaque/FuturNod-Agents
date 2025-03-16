@@ -37,6 +37,7 @@ import LeadGenieScoreInfo from "./LeadGenieScoreInfo";
 import { Link } from "react-router-dom";
 import { LeadGenieScoreParams } from "@/api/proxy";
 import MarkdownDisplay from "@/components/ui/markdown-display";
+import ErrorBoundary from "@/components/ui/ErrorBoundary";
 
 const LeadGenieScoreDashboard: React.FC = () => {
   const [company, setCompany] = useState("");
@@ -390,15 +391,15 @@ const LeadGenieScoreDashboard: React.FC = () => {
                         <TabsContent value="formatted">
                           <Card className="bg-white text-gray-900 overflow-hidden">
                             <CardContent className="p-4">
-                              <MarkdownDisplay
-                                content={
-                                  currentResult.result
-                                    ? generateMarkdown(currentResult.result)
-                                    : "No results available"
-                                }
-                                maxHeight="400px"
-                                className="p-4 markdown-content"
-                              />
+                              <ErrorBoundary>
+                                <div className="bg-white p-4 rounded-md border border-gray-200 overflow-auto">
+                                  <div className="whitespace-pre-wrap">
+                                    {currentResult.result
+                                      ? generateMarkdown(currentResult.result)
+                                      : "No results available"}
+                                  </div>
+                                </div>
+                              </ErrorBoundary>
                             </CardContent>
                           </Card>
                         </TabsContent>

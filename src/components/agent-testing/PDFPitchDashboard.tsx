@@ -18,7 +18,7 @@ import {
 import PDFPitchInfo from "./PDFPitchInfo";
 import { useSalesContactFinder } from "@/api/hooks/useSalesContactFinder";
 import { Link } from "react-router-dom";
-import MarkdownDisplay from "@/components/ui/markdown-display";
+import ErrorBoundary from "@/components/ui/ErrorBoundary";
 
 const PDFPitchDashboard = () => {
   // Form state for company info
@@ -76,7 +76,8 @@ const PDFPitchDashboard = () => {
   const filteredHistory = searchHistory.filter((item) => {
     try {
       return item.company === "pdf-pitch";
-    } catch {
+    } catch (error) {
+      console.error("Error filtering history:", error);
       return false;
     }
   });
@@ -84,19 +85,24 @@ const PDFPitchDashboard = () => {
   const downloadMarkdown = () => {
     if (!currentResult?.result) return;
 
-    const markdown =
-      currentResult.result?.file_output ||
-      currentResult.result?.raw_markdown ||
-      "No content available";
-    const blob = new Blob([markdown], { type: "text/markdown" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `pdf-pitch-${leadCompany.replace(/\s+/g, "-").toLowerCase()}-${new Date().toISOString().split("T")[0]}.md`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    try {
+      const markdown =
+        currentResult.result?.file_output ||
+        currentResult.result?.raw_markdown ||
+        "No content available";
+      const blob = new Blob([markdown], { type: "text/markdown" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `pdf-pitch-${leadCompany.replace(/\s+/g, "-").toLowerCase()}-${new Date().toISOString().split("T")[0]}.md`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error("Error downloading markdown:", error);
+      alert("Failed to download the pitch. Please try again.");
+    }
   };
 
   return (
@@ -252,7 +258,7 @@ const PDFPitchDashboard = () => {
 
         {/* Results Section */}
         <div className="lg:col-span-2">
-          <Card className="h-full">
+          <Card>
             <CardHeader>
               <CardTitle className="text-xl">One-Page Pitch</CardTitle>
             </CardHeader>
@@ -273,11 +279,9 @@ const PDFPitchDashboard = () => {
                   </p>
                 </div>
               ) : currentResult?.status === "success" ? (
-                <Tabs defaultValue="markdown">
+                <div>
                   <div className="flex justify-between items-center mb-4">
-                    <TabsList className="mb-0">
-                      <TabsTrigger value="markdown">Pitch</TabsTrigger>
-                    </TabsList>
+                    <h3 className="font-medium">Pitch</h3>
                     <Button
                       variant="outline"
                       size="sm"
@@ -288,18 +292,18 @@ const PDFPitchDashboard = () => {
                       Download Pitch
                     </Button>
                   </div>
-                  <TabsContent value="markdown" className="mt-0">
-                    <MarkdownDisplay
-                      content={
-                        currentResult.result?.file_output ||
-                        currentResult.result?.raw_markdown ||
-                        "No content available"
-                      }
-                      maxHeight="600px"
-                      className="markdown-content"
-                    />
-                  </TabsContent>
-                </Tabs>
+                  <div className="mt-4">
+                    <ErrorBoundary>
+                      <div className="bg-white p-4 rounded-md border border-gray-200 overflow-auto">
+                        <div className="whitespace-pre-wrap">
+                          {currentResult.result?.file_output ||
+                            currentResult.result?.raw_markdown ||
+                            "No content available"}
+                        </div>
+                      </div>
+                    </ErrorBoundary>
+                  </div>
+                </div>
               ) : (
                 <div className="flex flex-col items-center justify-center py-12 text-center">
                   <FileUp className="h-12 w-12 text-gray-300 mb-4" />

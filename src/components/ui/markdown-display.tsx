@@ -2,7 +2,6 @@ import React from "react";
 import { ScrollArea } from "./scroll-area";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import "./markdown.css";
 
 interface MarkdownDisplayProps {
   content: string;
@@ -13,17 +12,31 @@ interface MarkdownDisplayProps {
 const MarkdownDisplay: React.FC<MarkdownDisplayProps> = ({
   content,
   className = "",
-  maxHeight = "none", // Changed default to none to show all content
+  maxHeight = "none",
 }) => {
-  if (!content) return <p>No content available</p>;
+  if (!content) return <div className="p-4">No content available</div>;
 
-  return (
-    <ScrollArea className="w-full" style={{ maxHeight }}>
-      <div className={`prose prose-sm max-w-none w-full ${className}`}>
-        <ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown>
+  // Simple text rendering as fallback
+  const renderAsPlainText = () => {
+    return (
+      <div className={`whitespace-pre-wrap p-4 ${className}`}>{content}</div>
+    );
+  };
+
+  try {
+    return (
+      <div className="w-full h-full">
+        <div
+          className={`prose prose-sm max-w-none p-4 markdown-content ${className}`}
+        >
+          <ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown>
+        </div>
       </div>
-    </ScrollArea>
-  );
+    );
+  } catch (error) {
+    console.error("Error rendering markdown:", error);
+    return renderAsPlainText();
+  }
 };
 
 export default MarkdownDisplay;

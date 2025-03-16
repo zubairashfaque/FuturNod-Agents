@@ -18,6 +18,7 @@ import { useSalesContactFinder } from "@/api/hooks/useSalesContactFinder";
 import DealCraftInfo from "./DealCraftInfo";
 import DebugPanel from "./DebugPanel";
 import MarkdownDisplay from "@/components/ui/markdown-display";
+import ErrorBoundary from "@/components/ui/ErrorBoundary";
 
 const DealCraftDashboard = () => {
   // Form state
@@ -327,15 +328,18 @@ const DealCraftDashboard = () => {
                     </Tabs>
                   </div>
                   <TabsContent value="markdown" className="mt-0">
-                    <MarkdownDisplay
-                      content={
-                        typeof currentResult.result?.raw_markdown === "string"
-                          ? currentResult.result.raw_markdown
-                          : "No content available"
-                      }
-                      maxHeight="600px"
-                      className="markdown-content"
-                    />
+                    <ErrorBoundary>
+                      <div className="bg-white p-4 rounded-md border border-gray-200 overflow-auto">
+                        <div className="whitespace-pre-wrap">
+                          {typeof currentResult.result?.raw_markdown ===
+                          "string"
+                            ? currentResult.result.raw_markdown
+                            : typeof currentResult.result === "string"
+                              ? currentResult.result
+                              : "No content available"}
+                        </div>
+                      </div>
+                    </ErrorBoundary>
                   </TabsContent>
                 </div>
               ) : (
