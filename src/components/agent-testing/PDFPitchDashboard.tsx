@@ -19,6 +19,8 @@ import PDFPitchInfo from "./PDFPitchInfo";
 import { useSalesContactFinder } from "@/api/hooks/useSalesContactFinder";
 import { Link } from "react-router-dom";
 import ErrorBoundary from "@/components/ui/ErrorBoundary";
+import remarkGfm from "remark-gfm";
+import ReactMarkdown from "react-markdown";
 
 const PDFPitchDashboard = () => {
   // Form state for company info
@@ -295,11 +297,12 @@ const PDFPitchDashboard = () => {
                   <div className="mt-4">
                     <ErrorBoundary>
                       <div className="bg-white p-4 rounded-md border border-gray-200 overflow-auto">
-                        <div className="whitespace-pre-wrap">
+                        {/* Removed className from ReactMarkdown and applied it to the outer div */}
+                        <ReactMarkdown remarkPlugins={[remarkGfm]}>
                           {currentResult.result?.file_output ||
                             currentResult.result?.raw_markdown ||
                             "No content available"}
-                        </div>
+                        </ReactMarkdown>
                       </div>
                     </ErrorBoundary>
                   </div>
