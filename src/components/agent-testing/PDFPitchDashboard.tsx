@@ -22,8 +22,12 @@ import ErrorBoundary from "@/components/ui/ErrorBoundary";
 import remarkGfm from 'remark-gfm';
 import ReactMarkdown from 'react-markdown';
 
+// Import a CSS file for styling markdown content
+// Note: You'll need to create this CSS file separately
+// import './markdown-styles.css';
+
 const PDFPitchDashboard = () => {
-  // Form state for company info
+  // State definitions and other functionality remain the same
   const [companyName, setCompanyName] = useState("TechInnovate");
   const [productName, setProductName] = useState("AI Analytics Suite");
   const [website, setWebsite] = useState("https://techinnovate.com");
@@ -31,12 +35,9 @@ const PDFPitchDashboard = () => {
   const [salesRepContact, setSalesRepContact] = useState(
     "alex.johnson@techinnovate.com",
   );
-
-  // Form state for lead info
   const [leadName, setLeadName] = useState("Sarah Williams");
   const [leadCompany, setLeadCompany] = useState("DataDriven Inc.");
   const [leadIndustry, setLeadIndustry] = useState("Financial Services");
-
   const [showInfo, setShowInfo] = useState(false);
 
   // API integration
@@ -49,12 +50,10 @@ const PDFPitchDashboard = () => {
     loadHistoryItem,
   } = useSalesContactFinder();
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-
-    // Create the payload
     const payload = {
-      target_company: "pdf-pitch", // This is a marker for the proxy to use the right endpoint
+      target_company: "pdf-pitch",
       our_product: JSON.stringify({
         company_info: {
           name: companyName,
@@ -70,7 +69,6 @@ const PDFPitchDashboard = () => {
         },
       }),
     };
-
     await submitSearch(payload.target_company, payload.our_product);
   };
 
@@ -86,7 +84,6 @@ const PDFPitchDashboard = () => {
 
   const downloadMarkdown = () => {
     if (!currentResult?.result) return;
-
     try {
       const markdown =
         currentResult.result?.file_output ||
@@ -106,6 +103,16 @@ const PDFPitchDashboard = () => {
       alert("Failed to download the pitch. Please try again.");
     }
   };
+
+  // A simple React component to render the markdown content
+  // This avoids passing any props to ReactMarkdown
+  const MarkdownContent = ({ content }) => (
+    <div style={{ backgroundColor: 'white', padding: '1rem', borderRadius: '0.375rem', border: '1px solid #e5e7eb', overflow: 'auto' }}>
+      <ReactMarkdown remarkPlugins={[remarkGfm]}>
+        {content}
+      </ReactMarkdown>
+    </div>
+  );
 
   return (
     <div className="container mx-auto p-6 max-w-7xl">
@@ -296,27 +303,14 @@ const PDFPitchDashboard = () => {
                   </div>
                   <div className="mt-4">
                     <ErrorBoundary>
-                      <div className="bg-white p-4 rounded-md border border-gray-200 overflow-auto">
-                        {/* Use the components prop to customize elements without using className */}
-                        <ReactMarkdown 
-                          remarkPlugins={[remarkGfm]}
-                          components={{
-                            // Define components without className props
-                            // This approach works with newer versions of react-markdown
-                            p: ({node, ...props}) => <p style={{marginBottom: '1rem'}} {...props} />,
-                            h1: ({node, ...props}) => <h1 style={{fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '0.5rem'}} {...props} />,
-                            h2: ({node, ...props}) => <h2 style={{fontSize: '1.25rem', fontWeight: 'bold', marginBottom: '0.5rem'}} {...props} />,
-                            ul: ({node, ...props}) => <ul style={{listStyleType: 'disc', paddingLeft: '1.5rem', marginBottom: '1rem'}} {...props} />,
-                            ol: ({node, ...props}) => <ol style={{listStyleType: 'decimal', paddingLeft: '1.5rem', marginBottom: '1rem'}} {...props} />,
-                            li: ({node, ...props}) => <li style={{marginBottom: '0.25rem'}} {...props} />,
-                            a: ({node, ...props}) => <a style={{color: '#3b82f6', textDecoration: 'underline'}} {...props} />
-                          }}
-                        >
-                          {currentResult.result?.file_output ||
-                            currentResult.result?.raw_markdown ||
-                            "No content available"}
-                        </ReactMarkdown>
-                      </div>
+                      {/* Use the custom component instead of direct ReactMarkdown usage */}
+                      <MarkdownContent 
+                        content={
+                          currentResult.result?.file_output ||
+                          currentResult.result?.raw_markdown ||
+                          "No content available"
+                        } 
+                      />
                     </ErrorBoundary>
                   </div>
                 </div>
