@@ -331,14 +331,9 @@ const ContractVistaDashboard: React.FC = () => {
                                     style={{ maxHeight: "400px" }}
                                   >
                                     <div className="whitespace-pre-wrap">
-                                      {currentResult.result
-                                        ? typeof currentResult.result ===
-                                          "string"
-                                          ? currentResult.result
-                                          : generateMarkdown(
-                                              currentResult.result,
-                                            )
-                                        : "No results available"}
+                                      {currentResult.result && (
+                                        <MarkdownDisplay markdown={generateMarkdown(currentResult.result)} />
+                                      )}
                                     </div>
                                   </div>
                                 </ErrorBoundary>
